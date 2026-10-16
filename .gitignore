@@ -57,6 +57,14 @@ tsconfig.node.tsbuildinfo
 .stylelintcache
 
 # Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+/local-data/
+secrets.json
+profiles.json
 ./db/*
 apps/db/*
 apps/tauri/db/*

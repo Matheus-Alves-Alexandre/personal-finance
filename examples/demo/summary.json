@@ -1,0 +1,41 @@
+{
+  "synthetic": true,
+  "start": "2025-04-01",
+  "end": "2026-10-14",
+  "accounts": [
+    {
+      "name": "Investimentos Brasil - DEMO",
+      "currency": "BRL",
+      "file": "investimentos-br.csv",
+      "transactions": 142,
+      "endingCash": 59496.24,
+      "holdings": {
+        "PETR4.SA": 360,
+        "VALE3.SA": 190,
+        "ITUB4.SA": 285,
+        "BOVA11.SA": 95,
+        "HGLG11.SA": 76
+      }
+    },
+    {
+      "name": "Investimentos Exterior - DEMO",
+      "currency": "USD",
+      "file": "investimentos-us.csv",
+      "transactions": 83,
+      "endingCash": 7691.85,
+      "holdings": {
+        "AAPL": 38,
+        "MSFT": 19,
+        "VOO": 19
+      }
+    },
+    {
+      "name": "Conta Corrente - DEMO",
+      "currency": "BRL",
+      "file": "conta-corrente.csv",
+      "transactions": 229,
+      "endingCash": 83200.2,
+      "holdings": {}
+    }
+  ]
+}
