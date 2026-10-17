@@ -76,7 +76,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
                       },
                     )}
                   >
-                    Wealthfolio
+                    Personal Finance
                   </span>
                 </div>
 

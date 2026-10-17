@@ -1,25 +1,27 @@
 # Personal Finance
 
 Projeto pessoal de finanças, aberto e baseado no
-[Wealthfolio](https://github.com/wealthfolio/wealthfolio). Nome provisório escolhido para esta
-versão independente.
+[Wealthfolio](https://github.com/wealthfolio/wealthfolio). Nome provisório
+escolhido para esta versão independente.
 
-O ponto de partida preserva o código e o histórico do projeto original. A interface já oferece
-**Português (Brasil)**. As adaptações de identidade visual e os builds próprios ainda estão em
-preparação; o aplicativo oficial usado para explorar as telas continua sendo o Wealthfolio.
+O ponto de partida preserva o código e o histórico do projeto original. A
+interface já oferece **Português (Brasil)**. As adaptações de identidade visual
+e os builds próprios ainda estão em preparação; o aplicativo oficial usado para
+explorar as telas continua sendo o Wealthfolio.
 
 - [Dados fictícios para testar contas, investimentos e despesas](examples/demo/README.md)
 - [Plano de personalização e situação do projeto](PERSONAL_FINANCE.md)
 
-Licença preservada: **AGPL-3.0**, conforme [LICENSE](LICENSE). Créditos aos autores originais. Este
-projeto não é afiliado nem endossado pela Teymz Inc. Wealthfolio is a trademark of Teymz Inc.;
-consulte [TRADEMARKS.md](TRADEMARKS.md). Uma distribuição modificada terá nome, ícones e identidade
-próprios antes de ser publicada.
+Licença preservada: **AGPL-3.0**, conforme [LICENSE](LICENSE). Créditos aos
+autores originais. Este projeto não é afiliado nem endossado pela Teymz Inc.
+Wealthfolio is a trademark of Teymz Inc.; consulte
+[TRADEMARKS.md](TRADEMARKS.md). Uma distribuição modificada terá nome, ícones e
+identidade próprios antes de ser publicada.
 
 ## Documentação original da base
 
-O conteúdo abaixo documenta a base Wealthfolio e seus serviços oficiais. Não representa serviços ou
-versões publicadas pelo Personal Finance.
+O conteúdo abaixo documenta a base Wealthfolio e seus serviços oficiais. Não
+representa serviços ou versões publicadas pelo Personal Finance.
 
 <div align="center">
   <a href="https://github.com/wealthfolio/wealthfolio">

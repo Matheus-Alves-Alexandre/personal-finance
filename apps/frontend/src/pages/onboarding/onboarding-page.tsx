@@ -85,7 +85,7 @@ const OnboardingPage = () => {
         <div className="flex flex-col items-center">
           {/* Logo */}
           <img
-            alt="Wealthfolio"
+            alt="Personal Finance"
             className={cn(isAppearanceStep ? "mb-2 h-12 w-12" : "mb-3 h-16 w-16 sm:h-16 sm:w-16")}
             src="/logo-vantage.png"
           />

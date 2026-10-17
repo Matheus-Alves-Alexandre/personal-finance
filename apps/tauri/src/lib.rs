@@ -736,7 +736,7 @@ pub fn run() {
         ])
         .build(tauri::generate_context!())
         // Failure to construct the application is terminal; no command runtime exists yet.
-        .expect("Failed to build Wealthfolio application")
+        .expect("Failed to build Personal Finance application")
         .run(|_handle, event| {
             #[cfg(mobile)]
             if let tauri::RunEvent::WindowEvent {
