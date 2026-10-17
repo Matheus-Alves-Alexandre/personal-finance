@@ -14,7 +14,6 @@ export const isWeb = true;
 
 export const API_PREFIX = "/api/v1";
 export const EVENTS_ENDPOINT = `${API_PREFIX}/events/stream`;
-export const AI_CHAT_STREAM_ENDPOINT = `${API_PREFIX}/ai/chat/stream`;
 
 type CommandMap = Record<string, { method: string; path: string }>;
 
@@ -361,20 +360,7 @@ export const COMMANDS: CommandMap = {
   get_net_worth: { method: "GET", path: "/net-worth" },
   get_net_worth_history: { method: "GET", path: "/net-worth/history" },
   // AI Providers
-  get_ai_providers: { method: "GET", path: "/ai/providers" },
-  update_ai_provider_settings: { method: "PUT", path: "/ai/providers/settings" },
-  set_default_ai_provider: { method: "POST", path: "/ai/providers/default" },
-  list_ai_models: { method: "GET", path: "/ai/providers" },
   // AI Threads
-  list_ai_threads: { method: "GET", path: "/ai/threads" },
-  get_ai_thread: { method: "GET", path: "/ai/threads" },
-  get_ai_thread_messages: { method: "GET", path: "/ai/threads" },
-  update_ai_thread: { method: "PUT", path: "/ai/threads" },
-  delete_ai_thread: { method: "DELETE", path: "/ai/threads" },
-  add_ai_thread_tag: { method: "POST", path: "/ai/threads" },
-  remove_ai_thread_tag: { method: "DELETE", path: "/ai/threads" },
-  get_ai_thread_tags: { method: "GET", path: "/ai/threads" },
-  update_tool_result: { method: "PATCH", path: "/ai/tool-result" },
   // Allocation Targets
   list_allocation_targets: { method: "GET", path: "/allocation-targets" },
   get_allocation_target: { method: "GET", path: "/allocation-targets" },
@@ -407,12 +393,6 @@ export const COMMANDS: CommandMap = {
   link_loan_payment: { method: "POST", path: "/loans/payments" },
   get_alternative_holdings: { method: "GET", path: "/alternative-holdings" },
   // Agent Access (PATs + audit log)
-  get_agent_access_status: { method: "GET", path: "/agent-access/status" },
-  list_agent_access_tokens: { method: "GET", path: "/agent-access/tokens" },
-  create_agent_access_token: { method: "POST", path: "/agent-access/tokens" },
-  delete_agent_access_token: { method: "DELETE", path: "/agent-access/tokens" },
-  list_agent_audit_log: { method: "GET", path: "/agent-access/audit" },
-  purge_agent_audit_log: { method: "POST", path: "/agent-access/audit/purge" },
 };
 
 /**
@@ -2018,123 +1998,6 @@ export const invoke = async <T>(command: string, payload?: Record<string, unknow
         scenarioMode,
         ...(eligibleAssetIds === undefined ? {} : { eligibleAssetIds }),
       });
-      break;
-    }
-    // AI Providers
-    case "get_ai_providers":
-      break;
-    case "update_ai_provider_settings": {
-      const { request } = payload as { request: Record<string, unknown> };
-      body = JSON.stringify(request);
-      break;
-    }
-    case "set_default_ai_provider": {
-      const { request } = payload as { request: Record<string, unknown> };
-      body = JSON.stringify(request);
-      break;
-    }
-    case "list_ai_models": {
-      const { providerId } = payload as { providerId: string };
-      url += `/${encodeURIComponent(providerId)}/models`;
-      break;
-    }
-    // AI Threads
-    case "list_ai_threads": {
-      const { cursor, limit, search } = (payload ?? {}) as {
-        cursor?: string;
-        limit?: number;
-        search?: string;
-      };
-      const params = new URLSearchParams();
-      if (cursor) params.set("cursor", cursor);
-      if (limit !== undefined) params.set("limit", String(limit));
-      if (search) params.set("search", search);
-      const qs = params.toString();
-      if (qs) url += `?${qs}`;
-      break;
-    }
-    case "get_ai_thread": {
-      const { threadId } = payload as { threadId: string };
-      url += `/${encodeURIComponent(threadId)}`;
-      break;
-    }
-    case "get_ai_thread_messages": {
-      const { threadId } = payload as { threadId: string };
-      url += `/${encodeURIComponent(threadId)}/messages`;
-      break;
-    }
-    case "update_tool_result": {
-      const { request } = payload as {
-        request: { threadId: string; toolCallId: string; resultPatch: unknown };
-      };
-      body = JSON.stringify({
-        threadId: request.threadId,
-        toolCallId: request.toolCallId,
-        resultPatch: request.resultPatch,
-      });
-      break;
-    }
-    case "update_ai_thread": {
-      const { request } = payload as {
-        request: { id: string; title?: string; isPinned?: boolean };
-      };
-      url += `/${encodeURIComponent(request.id)}`;
-      body = JSON.stringify({ title: request.title, isPinned: request.isPinned });
-      break;
-    }
-    case "delete_ai_thread": {
-      const { threadId } = payload as { threadId: string };
-      url += `/${encodeURIComponent(threadId)}`;
-      break;
-    }
-    case "add_ai_thread_tag": {
-      const { threadId, tag } = payload as { threadId: string; tag: string };
-      url += `/${encodeURIComponent(threadId)}/tags`;
-      body = JSON.stringify({ tag });
-      break;
-    }
-    case "remove_ai_thread_tag": {
-      const { threadId, tag } = payload as { threadId: string; tag: string };
-      url += `/${encodeURIComponent(threadId)}/tags/${encodeURIComponent(tag)}`;
-      break;
-    }
-    case "get_ai_thread_tags": {
-      const { threadId } = payload as { threadId: string };
-      url += `/${encodeURIComponent(threadId)}/tags`;
-      break;
-    }
-    // Agent Access
-    case "create_agent_access_token": {
-      const { name, expiresAt, scopes } = payload as {
-        name: string;
-        expiresAt?: string;
-        scopes: string[];
-      };
-      body = JSON.stringify({ name, expiresAt, scopes });
-      break;
-    }
-    case "delete_agent_access_token": {
-      const { id } = payload as { id: string };
-      url += `/${encodeURIComponent(id)}`;
-      break;
-    }
-    case "list_agent_audit_log": {
-      const { page, pageSize, q, tools, outcomes, actorKinds } = payload as {
-        page: number;
-        pageSize: number;
-        q?: string;
-        tools?: string[];
-        outcomes?: string[];
-        actorKinds?: string[];
-      };
-      const params = new URLSearchParams();
-      params.set("page", String(page));
-      params.set("pageSize", String(pageSize));
-      if (q) params.set("q", q);
-      if (tools?.length) params.set("tools", tools.join(","));
-      if (outcomes?.length) params.set("outcomes", outcomes.join(","));
-      if (actorKinds?.length) params.set("actorKinds", actorKinds.join(","));
-      url += `?${params.toString()}`;
       break;
     }
   }

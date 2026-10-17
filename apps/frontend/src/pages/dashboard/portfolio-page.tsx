@@ -71,11 +71,13 @@ export default function PortfolioPage() {
     (propertyId: string, _purchaseDate?: Date, propertyName?: string) => {
       setPendingLiabilityLink(propertyId);
       setPendingLiabilityType("mortgage");
-      setPendingMortgageName(propertyName ? `${propertyName} Mortgage` : undefined);
+      setPendingMortgageName(
+        propertyName ? `${propertyName} ${t("asset:altContent.mortgage_suffix")}` : undefined,
+      );
       setModalDefaultKind(AlternativeAssetKind.LIABILITY);
       setIsQuickAddOpen(true);
     },
-    [],
+    [t],
   );
 
   const commonActions = (

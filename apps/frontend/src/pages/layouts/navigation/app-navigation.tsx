@@ -62,13 +62,6 @@ function buildStaticNavigation(t: TFunction): NavigationProps {
         keywords: ["goals", "fire", "retire", "retirement", "savings", "planner"],
         label: t("common:nav.label_goals"),
       },
-      {
-        icon: <Icons.Sparkles className="size-6" />,
-        title: t("common:assistant"),
-        href: "/assistant",
-        keywords: ["ai", "assistant", "chat", "help", "ask"],
-        label: t("common:nav.label_assistant"),
-      },
     ],
     secondary: [
       {

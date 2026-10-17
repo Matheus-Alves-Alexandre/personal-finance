@@ -734,10 +734,6 @@ fn release_within<R: tauri::Runtime>(handle: &AppHandle<R>, limit: std::time::Du
                 log::warn!("Profile database was not released before exit: {error}");
             }
         }
-        // Teardown stops the MCP server only while a profile runtime exists.
-        if handle.try_state::<crate::mcp::McpServerState>().is_some() {
-            crate::mcp::stop_server(&handle).await;
-        }
         let _ = released.send(());
     });
     if wait.recv_timeout(limit).is_err() {
@@ -1066,7 +1062,6 @@ mod sync_state_tests {
             );
             tauri::test::mock_builder()
                 .manage(profiles)
-                .manage(crate::mcp::McpServerState::default())
                 .build(context)
                 .unwrap()
         }

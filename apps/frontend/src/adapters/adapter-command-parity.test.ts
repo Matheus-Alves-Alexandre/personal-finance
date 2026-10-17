@@ -7,7 +7,8 @@ import { calculateRebalancePlan as calculateTauriRebalancePlan } from "./tauri";
 import { COMMANDS, invoke } from "./web/core";
 
 const { platformInvokeMock } = vi.hoisted(() => ({
-  platformInvokeMock: vi.fn(),
+  platformInvokeMock:
+    vi.fn<(command: string, payload?: Record<string, unknown>) => Promise<unknown>>(),
 }));
 
 vi.mock("#platform", () => ({ invoke: platformInvokeMock }));
@@ -153,6 +154,20 @@ describe("rebalance eligibility transport", () => {
 });
 
 describe("adapter command parity", () => {
+  it("rejects removed AI and agent commands before making a network request", async () => {
+    const mock = stubFetch({});
+    for (const command of [
+      "get_ai_providers",
+      "list_ai_threads",
+      "update_tool_result",
+      "create_agent_access_token",
+      "get_agent_access_status",
+    ]) {
+      await expect(invoke(command)).rejects.toThrow("Unsupported command");
+    }
+    expect(mock).not.toHaveBeenCalled();
+  });
+
   it("registers every command reachable from the web adapter", () => {
     const files = [
       ...collectSourceFiles(path.join(frontendSrcDir, "adapters/shared")),

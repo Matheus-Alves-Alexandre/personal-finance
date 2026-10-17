@@ -1,6 +1,7 @@
 import { RestoredPortfolioNotice } from "@/features/database-recovery/restored-portfolio-notice";
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { CONNECT_ENABLED } from "@/lib/connect-config";
 
 import { AppLayout } from "@/pages/layouts/app-layout";
 import { OnboardingLayout } from "@/pages/layouts/onboarding-layout";
@@ -29,14 +30,11 @@ import SettingsAccountsPage from "@/pages/settings/accounts/accounts-page";
 import PortfoliosPage from "@/pages/settings/portfolios/portfolios-page";
 import SettingsAppearancePage from "@/pages/settings/appearance/appearance-page";
 import AccountPage from "./pages/account/account-page";
-import AiAssistantPage from "./pages/ai-assistant/ai-assistant-page";
 import AssetProfilePage from "./pages/asset/asset-profile-page";
 import HealthPage from "./pages/health/health-page";
 import OnboardingPage from "./pages/onboarding/onboarding-page";
 import AboutSettingsPage from "./pages/settings/about/about-page";
 import AddonSettingsPage from "./pages/settings/addons/addon-settings";
-import AgentAccessPage from "./pages/settings/agent-access/agent-access-page";
-import AiProvidersPage from "./pages/settings/ai-providers/ai-providers-page";
 import ContributionLimitPage from "./pages/settings/contribution-limits/contribution-limits-page";
 import ExportSettingsPage from "./pages/settings/exports/exports-page";
 import GeneralSettingsPage from "./pages/settings/general/general-page";
@@ -111,8 +109,11 @@ export function AppRoutes() {
           <Route path="performance" element={<PerformancePage />} />
           <Route path="insights" element={<PortfolioInsightsPage />} />
           <Route path="health" element={<HealthPage />} />
-          <Route path="assistant" element={<AiAssistantPage />} />
-          <Route path="connect" element={<ConnectPage />} />
+          <Route path="assistant" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="connect"
+            element={CONNECT_ENABLED ? <ConnectPage /> : <Navigate to="/dashboard" replace />}
+          />
           <Route
             path="allocation-targets"
             element={<Navigate to="/insights?tab=overview" replace />}
@@ -149,9 +150,18 @@ export function AppRoutes() {
             <Route path="market-data/import" element={<MarketDataImportPage />} />
             <Route path="securities" element={<AssetsPage />} />
             <Route path="taxonomies" element={<TaxonomiesPage />} />
-            <Route path="connect" element={<ConnectSettingsPage />} />
-            <Route path="ai-providers" element={<AiProvidersPage />} />
-            <Route path="agent-access" element={<AgentAccessPage />} />
+            <Route
+              path="connect"
+              element={
+                CONNECT_ENABLED ? (
+                  <ConnectSettingsPage />
+                ) : (
+                  <Navigate to="/settings/accounts" replace />
+                )
+              }
+            />
+            <Route path="ai-providers" element={<Navigate to="/settings/general" replace />} />
+            <Route path="agent-access" element={<Navigate to="/settings/general" replace />} />
             <Route path="addons" element={<AddonSettingsPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

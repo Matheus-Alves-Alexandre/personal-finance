@@ -4,17 +4,14 @@ import { Separator } from "@wealthfolio/ui/components/ui/separator";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useIsCompactTableViewport, usePlatform } from "@/hooks/use-platform";
+import { useIsCompactTableViewport } from "@/hooks/use-platform";
+import { CONNECT_ENABLED } from "@/lib/connect-config";
 import { SidebarNav } from "./sidebar-nav";
 
 export default function SettingsLayout() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isTauri, isMobile } = usePlatform();
-  // The embedded MCP server only ships in the desktop build & web server, not on iOS/Android app.
-  const hasMcpServer = !(isTauri && isMobile);
-
   const sections = useMemo(
     () => [
       {
@@ -89,34 +86,22 @@ export default function SettingsLayout() {
       {
         title: t("settings:nav.sections.connections"),
         items: [
-          {
-            title: t("settings:nav.items.connect"),
-            href: "connect",
-            subtitle: t("settings:nav.subtitles.connect"),
-            icon: <Icons.CloudSync2 className="size-6 text-blue-400" />,
-          },
+          ...(CONNECT_ENABLED
+            ? [
+                {
+                  title: t("settings:nav.items.connect"),
+                  href: "connect",
+                  subtitle: t("settings:nav.subtitles.connect"),
+                  icon: <Icons.CloudSync2 className="size-6 text-blue-400" />,
+                },
+              ]
+            : []),
           {
             title: t("settings:nav.items.market_data"),
             href: "market-data",
             subtitle: t("settings:nav.subtitles.market_data"),
             icon: <Icons.BarChart className="size-5" />,
           },
-          {
-            title: t("settings:nav.items.ai_providers"),
-            href: "ai-providers",
-            subtitle: t("settings:nav.subtitles.ai_providers"),
-            icon: <Icons.SparklesOutline className="size-5" />,
-          },
-          ...(hasMcpServer
-            ? [
-                {
-                  title: t("settings:nav.items.agent_access"),
-                  href: "agent-access",
-                  subtitle: t("settings:nav.subtitles.agent_access"),
-                  icon: <Icons.Brain className="size-5" />,
-                },
-              ]
-            : []),
         ],
       },
       {
@@ -142,7 +127,7 @@ export default function SettingsLayout() {
         ],
       },
     ],
-    [t, hasMcpServer],
+    [t],
   );
 
   // Check if we're on the main settings page (mobile) or a specific setting page

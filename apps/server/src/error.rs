@@ -6,7 +6,6 @@ use axum::{
 use serde::Serialize;
 use std::error::Error as StdError;
 use thiserror::Error;
-use wealthfolio_ai::ProviderApiError;
 use wealthfolio_core::errors::{DatabaseError, Error as CoreError};
 use wealthfolio_core::profiles::ProfileError;
 
@@ -171,12 +170,6 @@ impl ApiError {
         } else {
             Self::BadRequest(error.to_string())
         }
-    }
-}
-
-impl From<ProviderApiError> for ApiError {
-    fn from(err: ProviderApiError) -> Self {
-        ApiError::BadRequest(err.to_string())
     }
 }
 

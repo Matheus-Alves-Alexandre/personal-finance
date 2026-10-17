@@ -348,11 +348,13 @@ export const HoldingsPage = () => {
       setPendingLiabilityLink(propertyId);
       setPendingLiabilityType("mortgage");
       setPendingOriginationDate(purchaseDate);
-      setPendingMortgageName(propertyName ? `${propertyName} Mortgage` : undefined);
+      setPendingMortgageName(
+        propertyName ? `${propertyName} ${t("asset:altContent.mortgage_suffix")}` : undefined,
+      );
       setModalDefaultKind(AlternativeAssetKind.LIABILITY);
       setIsAlternativeAssetModalOpen(true);
     },
-    [],
+    [t],
   );
 
   // Handler for linking a mortgage to a property

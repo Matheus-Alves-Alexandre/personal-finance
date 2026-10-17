@@ -3,6 +3,7 @@ import { isAppleDevice } from "@/lib/device-utils";
 import { useAuth } from "@/context/auth-context";
 import { ProfileMenu } from "@/features/profiles/profile-menu";
 import { cn } from "@/lib/utils";
+import { CONNECT_ENABLED } from "@/lib/connect-config";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -147,7 +148,7 @@ export function AppSidebar({ navigation }: AppSidebarProps) {
             </div>
 
             <div className="flex shrink-0 flex-col p-2">
-              <ConnectNavItem collapsed={collapsed} />
+              {CONNECT_ENABLED && <ConnectNavItem collapsed={collapsed} />}
               {navigation?.secondary?.map((item) => (
                 <NavItem key={item.title} item={item} collapsed={collapsed} />
               ))}

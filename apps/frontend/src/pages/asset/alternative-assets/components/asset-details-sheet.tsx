@@ -826,7 +826,7 @@ function LiabilityFields({
                   onValueChange={(val) => field.onChange(val || null)}
                   options={LIABILITY_TYPES.map((opt) => ({
                     value: opt.value,
-                    label: opt.label,
+                    label: t(`asset:altContent.liabilityType.${opt.value}`),
                   }))}
                   placeholder={t("asset:detailsSheet.select_liability_type")}
                   sheetTitle={t("asset:detailsSheet.liability_type")}

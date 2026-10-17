@@ -1,11 +1,9 @@
-use super::ai_environment::TauriAiEnvironment;
 use super::registry::ServiceContext;
 use crate::domain_events::TauriDomainEventSink;
 use crate::services::ConnectService;
 use log::{error, warn};
 use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc;
-use wealthfolio_ai::{AiProviderService, ChatConfig, ChatService};
 use wealthfolio_connect::{
     BrokerSyncService, CoreImportRunRepositoryAdapter, ImportRunRepositoryTrait,
 };
@@ -36,7 +34,7 @@ use wealthfolio_core::{
     },
     portfolios::PortfolioService,
     quotes::{QuoteService, QuoteServiceTrait},
-    settings::{SettingsRepositoryTrait, SettingsService, SettingsServiceTrait},
+    settings::{SettingsService, SettingsServiceTrait},
     taxonomies::TaxonomyService,
 };
 use wealthfolio_device_sync::{engine::DeviceSyncRuntimeState, DeviceEnrollService};
@@ -45,8 +43,6 @@ use wealthfolio_storage_sqlite::{
     accounts::AccountRepository,
     activities::ActivityRepository,
     addons::AddonStorageRepository,
-    agent::{McpAuditRepository, PatRepository},
-    ai_chat::AiChatRepository,
     assets::{AlternativeAssetRepository, AssetLogoRepository, AssetRepository},
     db::{self, write_actor, WriteHandle, WriterTask},
     fx::FxRepository,
@@ -660,17 +656,6 @@ async fn build_context(
         settings_service.clone(),
     ));
 
-    // AI provider service - catalog is embedded at compile time
-    let ai_catalog_json = include_str!("../../../../crates/ai/src/ai_providers.json");
-    let ai_provider_service = Arc::new(AiProviderService::new(
-        settings_repository.clone() as Arc<dyn SettingsRepositoryTrait>,
-        secret_store.clone(),
-        ai_catalog_json,
-    )?);
-
-    // AI chat repository for thread/message persistence
-    let ai_chat_repository = Arc::new(AiChatRepository::new(pool.clone(), writer.clone()));
-
     // Health service for portfolio health diagnostics
     let health_dismissal_repository =
         Arc::new(HealthDismissalRepository::new(pool.clone(), writer.clone()));
@@ -678,41 +663,6 @@ async fn build_context(
         HealthService::new(health_dismissal_repository)
             .with_projection_freshness(portfolio_coordinator.clone()),
     );
-
-    // Create AI environment and chat service
-    let ai_environment = Arc::new(TauriAiEnvironment::new(
-        base_currency.clone(),
-        account_service.clone(),
-        activity_service.clone(),
-        holdings_service.clone(),
-        valuation_service.clone(),
-        goal_service.clone(),
-        settings_service.clone(),
-        secret_store.clone(),
-        ai_chat_repository,
-        quote_service.clone(),
-        asset_service.clone(),
-        allocation_service.clone(),
-        performance_service.clone(),
-        income_service.clone(),
-        health_service.clone(),
-        taxonomy_service.clone(),
-        portfolio_service.clone(),
-        net_worth_service.clone(),
-        limits_service.clone(),
-        cash_activity_service.clone(),
-        activity_taxonomy_assignment_service.clone(),
-        categorization_rules_service.clone(),
-    ));
-    let agent_environment: Arc<dyn wealthfolio_agent_tools::AgentEnvironment> =
-        ai_environment.clone();
-    let ai_chat_service = Arc::new(ChatService::new(ai_environment, ChatConfig::default()));
-
-    // MCP audit log repository (agent access audit trail)
-    let mcp_audit_repository = Arc::new(McpAuditRepository::new(pool.clone(), writer.clone()));
-
-    // Personal Access Token repository (per-client scoped MCP auth)
-    let pat_repository = Arc::new(PatRepository::new(pool.clone(), writer.clone()));
 
     // Durable per-addon key-value storage repository
     let addon_storage_repository: Arc<dyn wealthfolio_core::addons::AddonStorageRepositoryTrait> =
@@ -787,11 +737,6 @@ async fn build_context(
             asset_logo_service,
             taxonomy_service,
             connect_service,
-            ai_provider_service,
-            ai_chat_service,
-            agent_environment,
-            mcp_audit_repository,
-            pat_repository,
             addon_service,
             device_enroll_service,
             device_sync_runtime,

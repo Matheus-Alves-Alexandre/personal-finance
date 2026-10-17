@@ -891,19 +891,6 @@ export default function SpendingTabContent() {
           </>
         ),
         sub: t("spending:tabContent.categorizeToImprove"),
-        action: (
-          <Link
-            to="/assistant"
-            state={{
-              aiPrompt: t("spending:tabContent.aiCategorizePrompt"),
-            }}
-            className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium underline-offset-4 hover:underline"
-            style={{ color: theme.deep }}
-          >
-            <Icons.Sparkles className="h-3 w-3" />
-            {t("spending:tabContent.askAiCategorize")}
-          </Link>
-        ),
       });
       if (hasNoCategorizationRules) {
         items.push({

@@ -20,7 +20,6 @@ use std::time::{Duration, Instant};
 use log::{error, info, warn};
 use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Emitter};
-use wealthfolio_ai::ProviderApiError;
 use wealthfolio_core::errors::{DatabaseError, Error, Result as CoreResult};
 use wealthfolio_core::events::DomainEvent;
 use wealthfolio_core::secrets::SecretStore;
@@ -91,14 +90,6 @@ impl std::error::Error for DatabaseUnavailable {}
 impl From<DatabaseUnavailable> for String {
     fn from(value: DatabaseUnavailable) -> Self {
         value.to_string()
-    }
-}
-
-impl From<DatabaseUnavailable> for ProviderApiError {
-    fn from(value: DatabaseUnavailable) -> Self {
-        ProviderApiError::ProviderError {
-            message: value.to_string(),
-        }
     }
 }
 
@@ -920,13 +911,10 @@ impl DatabaseRuntime {
     /// ownership proof meaningful.
     async fn teardown<R: tauri::Runtime>(
         &self,
-        handle: &AppHandle<R>,
+        _handle: &AppHandle<R>,
     ) -> std::result::Result<(), String> {
         let live = self.lock(&self.live)?.take();
         let Some(live) = live else {
-            // Nothing was installed, so no worker can be starting a server right
-            // now. Still stop one, in case an earlier teardown left it running.
-            crate::mcp::stop_server(handle).await;
             return Ok(());
         };
         let Live {
@@ -964,15 +952,6 @@ impl DatabaseRuntime {
                 .ensure_background_stopped()
                 .await;
         }
-
-        // The MCP server holds service clones — and therefore pool clones — that
-        // do not travel through the context, so it must be stopped explicitly.
-        //
-        // *After* the workers, never before: one of them is the task that starts
-        // this server. Stopping first leaves that task free to finish starting
-        // one afterwards, and the server it records is not reachable from
-        // `context`, so the ownership proof below would not see it either.
-        crate::mcp::stop_server(handle).await;
 
         // The write actor takes a pooled connection at spawn and holds it for the
         // life of its task, and its pool handle is an independent clone that the
@@ -1225,12 +1204,6 @@ fn start_workers(
 
     #[cfg(desktop)]
     {
-        let mcp_handle = handle.clone();
-        let mcp_context = Arc::clone(context);
-        workers.push(tauri::async_runtime::spawn(async move {
-            crate::mcp::start_if_enabled(&mcp_handle, &mcp_context).await;
-        }));
-
         // Periodic market data sync plus portfolio update (6h, 2min delay).
         workers.push(crate::portfolio_jobs::spawn_periodic_update(
             handle.clone(),

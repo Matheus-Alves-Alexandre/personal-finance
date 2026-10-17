@@ -67,7 +67,7 @@
     "matchExact": "exato",
     "matchRegex": "regex",
     "activityDeposit": "Depósito",
-    "activityWithdrawal": "Saque",
+    "activityWithdrawal": "Despesa / pagamento",
     "activityCredit": "Crédito / Reembolso",
     "activityInterest": "Juros",
     "activityDividend": "Dividendo",

@@ -1,5 +1,4 @@
 use std::sync::{atomic::AtomicBool, Arc, RwLock};
-use wealthfolio_ai::{AiProviderServiceTrait, ChatService};
 use wealthfolio_connect::BrokerSyncServiceTrait;
 use wealthfolio_core::{
     self, accounts, activities,
@@ -18,12 +17,8 @@ use wealthfolio_spending::categorization_rules::CategorizationRulesService;
 use wealthfolio_spending::events::EventsService;
 use wealthfolio_spending::insight::InsightService;
 use wealthfolio_spending::settings::SpendingSettingsService;
-use wealthfolio_storage_sqlite::{
-    agent::{McpAuditRepository, PatRepository},
-    sync::AppSyncRepository,
-};
+use wealthfolio_storage_sqlite::sync::AppSyncRepository;
 
-use super::TauriAiEnvironment;
 use crate::services::ConnectService;
 
 pub struct ServiceContext {
@@ -76,11 +71,6 @@ pub struct ServiceContext {
     pub asset_logo_service: Arc<dyn AssetLogoServiceTrait>,
     pub taxonomy_service: Arc<dyn taxonomies::TaxonomyServiceTrait>,
     pub connect_service: Arc<ConnectService>,
-    pub ai_provider_service: Arc<dyn AiProviderServiceTrait>,
-    pub ai_chat_service: Arc<ChatService<TauriAiEnvironment>>,
-    pub agent_environment: Arc<dyn wealthfolio_agent_tools::AgentEnvironment>,
-    pub mcp_audit_repository: Arc<McpAuditRepository>,
-    pub pat_repository: Arc<PatRepository>,
     pub addon_service: Arc<AddonService>,
     pub device_enroll_service: Arc<DeviceEnrollService>,
     pub device_sync_runtime: Arc<DeviceSyncRuntimeState>,
@@ -256,26 +246,6 @@ impl ServiceContext {
 
     pub fn connect_service(&self) -> Arc<ConnectService> {
         Arc::clone(&self.connect_service)
-    }
-
-    pub fn ai_provider_service(&self) -> Arc<dyn AiProviderServiceTrait> {
-        Arc::clone(&self.ai_provider_service)
-    }
-
-    pub fn ai_chat_service(&self) -> Arc<ChatService<TauriAiEnvironment>> {
-        Arc::clone(&self.ai_chat_service)
-    }
-
-    pub fn agent_environment(&self) -> Arc<dyn wealthfolio_agent_tools::AgentEnvironment> {
-        Arc::clone(&self.agent_environment)
-    }
-
-    pub fn mcp_audit_repository(&self) -> Arc<McpAuditRepository> {
-        Arc::clone(&self.mcp_audit_repository)
-    }
-
-    pub fn pat_repository(&self) -> Arc<PatRepository> {
-        Arc::clone(&self.pat_repository)
     }
 
     pub fn portfolio_service(&self) -> Arc<dyn portfolios::PortfolioServiceTrait> {

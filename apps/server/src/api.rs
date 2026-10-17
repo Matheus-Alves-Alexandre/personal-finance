@@ -30,9 +30,6 @@ mod accounts;
 mod activities;
 mod addon_network;
 mod addons;
-mod agent_access;
-mod ai_chat;
-mod ai_providers;
 mod allocation_targets;
 mod alternative_assets;
 mod assets;
@@ -212,13 +209,10 @@ fn app_router_with_profiles(
         .merge(taxonomies::router())
         .merge(net_worth::router())
         .merge(alternative_assets::router())
-        .merge(ai_providers::router())
-        .merge(ai_chat::router())
         .merge(health::router())
         .merge(custom_providers::router())
         .merge(spending::router())
-        .merge(allocation_targets::router())
-        .merge(agent_access::router());
+        .merge(allocation_targets::router());
 
     #[cfg(feature = "device-sync")]
     {
@@ -260,9 +254,8 @@ fn app_router_with_profiles(
         .merge(protected_api)
         .with_state(());
 
-    // Timeout wraps only the /api/v1 subtree: /mcp serves long-lived SSE
-    // streams that a request timeout would sever.
-    let mut router = Router::new()
+    // Apply the request timeout to the /api/v1 subtree.
+    let router = Router::new()
         .nest("/api/v1", api)
         .layer(middleware::from_fn_with_state(
             profiles.clone(),
@@ -279,13 +272,6 @@ fn app_router_with_profiles(
                     .unwrap_or_else(|_| axum::http::StatusCode::REQUEST_TIMEOUT.into_response())
             }
         }));
-
-    if config.mcp_enabled {
-        router = router.route(
-            "/mcp",
-            axum::routing::any(crate::profiles::mcp).with_state(profiles),
-        );
-    }
 
     Ok(router
         .layer(cors)

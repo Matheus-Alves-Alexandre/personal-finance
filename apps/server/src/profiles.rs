@@ -11,7 +11,7 @@ use axum::{
     extract::{Path, State},
     http::{Request, StatusCode},
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::Response,
     routing::post,
     Extension, Json, Router,
 };
@@ -81,7 +81,6 @@ pub struct WebProfiles {
     runtimes: Mutex<HashMap<Uuid, Arc<AppState>>>,
     // Keep slow startup serialized without blocking cached runtime lookups.
     initialization: Mutex<()>,
-    mcp: Mutex<HashMap<Uuid, Router>>,
     visited: std::sync::Mutex<std::collections::HashSet<String>>,
 }
 impl WebProfiles {
@@ -146,7 +145,6 @@ impl WebProfiles {
             deletion: Mutex::new(()),
             runtimes: Mutex::new(HashMap::new()),
             initialization: Mutex::new(()),
-            mcp: Mutex::new(HashMap::new()),
             visited: std::sync::Mutex::new(Default::default()),
         }))
     }
@@ -178,7 +176,6 @@ impl WebProfiles {
             .map_err(failure)?;
         }
         self.visited.lock().map_err(failure)?.insert(owner);
-        self.mcp.lock().await.remove(&id);
         let runtime = {
             let _initialization = self.initialization.lock().await;
             self.runtimes.lock().await.remove(&id)
@@ -200,15 +197,12 @@ impl WebProfiles {
             if let Some(task) = runtime.writer_task.lock().await.take() {
                 task.join().await;
             }
-            let mcp_sessions = runtime.mcp_sessions.clone();
-            close_mcp_sessions(&mcp_sessions).await?;
             let owner = Arc::downgrade(&runtime._database_owner);
             drop(_lifecycle);
             drop(runtime);
             let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
             while owner.strong_count() > 0 {
-                // An HTTP initialize already in flight may finish after the first close.
-                close_mcp_sessions(&mcp_sessions).await?;
+                // An in-flight request may still retain the runtime.
                 if tokio::time::Instant::now() >= deadline {
                     return Err(failure("Profile deletion is pending. Background work is finishing; retry deletion or restart the server."));
                 }
@@ -259,7 +253,6 @@ impl WebProfiles {
             deletion: Mutex::new(()),
             runtimes: Mutex::new(runtimes),
             initialization: Mutex::new(()),
-            mcp: Mutex::new(HashMap::new()),
             visited: std::sync::Mutex::new(Default::default()),
         }))
     }
@@ -353,17 +346,6 @@ impl WebProfiles {
             }
         });
     }
-}
-
-async fn close_mcp_sessions(
-    manager: &rmcp::transport::streamable_http_server::session::local::LocalSessionManager,
-) -> Result<()> {
-    use rmcp::transport::streamable_http_server::session::SessionManager;
-    let sessions: Vec<_> = manager.sessions.read().await.keys().cloned().collect();
-    for id in sessions {
-        manager.close_session(&id).await.map_err(failure)?;
-    }
-    Ok(())
 }
 
 pub fn router<S: Clone + Send + Sync + 'static>(root: Arc<WebProfiles>) -> Router<S> {
@@ -699,7 +681,7 @@ pub async fn admit(
         .admit(&owner, selected)
         .map_err(failure)?;
     let (parts, body) = response.into_parts();
-    // Recheck each chunk, and wake idle SSE/AI bodies on revocation.
+    // Recheck each chunk, and wake idle SSE bodies on revocation.
     let stream = futures::stream::unfold(
         (body.into_data_stream(), root, owner, selected),
         |(mut stream, root, owner, selected)| async move {
@@ -718,43 +700,6 @@ pub async fn admit(
         },
     );
     Ok(Response::from_parts(parts, Body::from_stream(stream)))
-}
-
-pub async fn mcp(State(root): State<Arc<WebProfiles>>, request: Request<Body>) -> Response {
-    use tower::ServiceExt;
-    let id = match request
-        .headers()
-        .get(wealthfolio_core::profiles::PROFILE_ID_HEADER)
-    {
-        Some(value) => match value.to_str().ok().and_then(|s| Uuid::parse_str(s).ok()) {
-            Some(id) => id,
-            None => return StatusCode::BAD_REQUEST.into_response(),
-        },
-        None => match root.registry.default_id() {
-            Ok(id) => id,
-            Err(e) => return failure(e).into_response(),
-        },
-    };
-    if let Err(error) = root.registry.profile(id) {
-        return failure(error).into_response();
-    }
-    let mut routers = root.mcp.lock().await;
-    let router = if let Some(router) = routers.get(&id) {
-        router.clone()
-    } else {
-        let state = match root.runtime(id).await {
-            Ok(state) => state,
-            Err(e) => return e.into_response(),
-        };
-        let router = crate::mcp::router(state, &root.config);
-        routers.insert(id, router.clone());
-        router
-    };
-    drop(routers);
-    router
-        .oneshot(request)
-        .await
-        .unwrap_or_else(|never| match never {})
 }
 
 pub async fn instance_logout(

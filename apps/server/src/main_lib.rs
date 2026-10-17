@@ -2,14 +2,12 @@ use std::path::PathBuf;
 use std::sync::{atomic::AtomicBool, Arc, RwLock};
 
 use crate::{
-    ai_environment::ServerAiEnvironment, auth::AuthManager, config::Config,
-    domain_events::WebDomainEventSink, events::EventBus, oidc::OidcManager,
-    secrets::build_secret_store,
+    auth::AuthManager, config::Config, domain_events::WebDomainEventSink, events::EventBus,
+    oidc::OidcManager, secrets::build_secret_store,
 };
 use tracing::warn;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
-use wealthfolio_ai::{AiProviderService, AiProviderServiceTrait, ChatConfig, ChatService};
 use wealthfolio_connect::{
     BrokerSyncService, BrokerSyncServiceTrait, CoreImportRunRepositoryAdapter,
     ImportRunRepositoryTrait, TokenLifecycleState,
@@ -49,7 +47,7 @@ use wealthfolio_core::{
     portfolios::{PortfolioService, PortfolioServiceTrait},
     quotes::{QuoteService, QuoteServiceTrait},
     secrets::SecretStore,
-    settings::{SettingsRepositoryTrait, SettingsService, SettingsServiceTrait},
+    settings::{SettingsService, SettingsServiceTrait},
     taxonomies::{TaxonomyService, TaxonomyServiceTrait},
 };
 use wealthfolio_device_sync::{engine::DeviceSyncRuntimeState, DeviceEnrollService};
@@ -57,8 +55,6 @@ use wealthfolio_storage_sqlite::{
     accounts::AccountRepository,
     activities::ActivityRepository,
     addons::AddonStorageRepository,
-    agent::{McpAuditRepository, PatRepository},
-    ai_chat::AiChatRepository,
     assets::{AlternativeAssetRepository, AssetLogoRepository, AssetRepository},
     db::{self, write_actor},
     fx::FxRepository,
@@ -74,8 +70,6 @@ use wealthfolio_storage_sqlite::{
 };
 
 pub struct AppState {
-    pub(crate) mcp_sessions:
-        Arc<rmcp::transport::streamable_http_server::session::local::LocalSessionManager>,
     pub(crate) profile_lifecycle: tokio::sync::Mutex<()>,
     pub(crate) connect_transition: Arc<tokio::sync::RwLock<()>>,
     pub(crate) workers: std::sync::Mutex<Vec<tokio::task::JoinHandle<()>>>,
@@ -122,8 +116,6 @@ pub struct AppState {
     pub asset_logo_service: Arc<dyn AssetLogoServiceTrait + Send + Sync>,
     pub addon_service: Arc<dyn AddonServiceTrait + Send + Sync>,
     pub connect_sync_service: Arc<dyn BrokerSyncServiceTrait + Send + Sync>,
-    pub ai_provider_service: Arc<dyn AiProviderServiceTrait + Send + Sync>,
-    pub ai_chat_service: Arc<ChatService<ServerAiEnvironment>>,
     pub data_root: String,
     pub db_path: String,
     /// Path plus key for the live database, so backups apply `PRAGMA key`.
@@ -159,13 +151,6 @@ pub struct AppState {
     pub rebalance_service: Arc<
         dyn wealthfolio_core::portfolio::allocation_targets::RebalanceServiceTrait + Send + Sync,
     >,
-    pub pat_repository: Arc<PatRepository>,
-    pub mcp_audit_repository: Arc<McpAuditRepository>,
-    pub agent_environment: Arc<dyn wealthfolio_agent_tools::AgentEnvironment>,
-    /// Whether the `/mcp` endpoint is mounted (from `Config::mcp_enabled`).
-    pub mcp_enabled: bool,
-    /// Whether agent tool calls are audited (from `Config::mcp_audit_enabled`).
-    pub mcp_audit_enabled: bool,
     // Drop after the services; retained even when all SQLite connections are idle.
     pub(crate) _database_owner: Arc<db::DatabaseOwner>,
 }
@@ -973,15 +958,6 @@ async fn initialize_profile_state(
     // Determine data root directory (parent of DB path)
     let data_root = data_root_path.to_string_lossy().to_string();
 
-    // AI provider service - catalog is embedded at compile time
-    let ai_catalog_json = include_str!("../../../crates/ai/src/ai_providers.json");
-    let ai_provider_service: Arc<dyn AiProviderServiceTrait + Send + Sync> =
-        Arc::new(AiProviderService::new(
-            settings_repo.clone() as Arc<dyn SettingsRepositoryTrait>,
-            secret_store.clone(),
-            ai_catalog_json,
-        )?);
-
     // Health service for portfolio health diagnostics
     let health_dismissal_repository =
         Arc::new(HealthDismissalRepository::new(pool.clone(), writer.clone()));
@@ -989,42 +965,6 @@ async fn initialize_profile_state(
         HealthService::new(health_dismissal_repository)
             .with_projection_freshness(portfolio_coordinator.clone()),
     );
-
-    // AI chat repository for thread/message persistence
-    let ai_chat_repository = Arc::new(AiChatRepository::new(pool.clone(), writer.clone()));
-
-    // Create the AI environment and chat service using the new wealthfolio-ai crate
-    let ai_environment = Arc::new(ServerAiEnvironment::new(
-        base_currency.clone(),
-        account_service.clone(),
-        activity_service.clone(),
-        holdings_service.clone(),
-        valuation_service.clone(),
-        goal_service.clone(),
-        settings_service.clone(),
-        secret_store.clone(),
-        ai_chat_repository,
-        quote_service.clone(),
-        asset_service.clone(),
-        allocation_service.clone(),
-        performance_service.clone(),
-        income_service.clone(),
-        health_service.clone(),
-        taxonomy_service.clone(),
-        portfolio_service.clone(),
-        net_worth_service.clone(),
-        limits_service.clone(),
-        cash_activity_service.clone(),
-        activity_taxonomy_assignment_service.clone(),
-        categorization_rules_service.clone(),
-    ));
-    let agent_environment: Arc<dyn wealthfolio_agent_tools::AgentEnvironment> =
-        ai_environment.clone();
-    let ai_chat_service = Arc::new(ChatService::new(ai_environment, ChatConfig::default()));
-
-    // Agent access: PAT auth + MCP audit trail (server-mode MCP)
-    let pat_repository = Arc::new(PatRepository::new(pool.clone(), writer.clone()));
-    let mcp_audit_repository = Arc::new(McpAuditRepository::new(pool.clone(), writer.clone()));
 
     // Device enroll service for E2EE sync
     let cloud_api_url = crate::features::cloud_api_base_url().unwrap_or_default();
@@ -1110,7 +1050,6 @@ async fn initialize_profile_state(
     )?);
 
     let state = Arc::new(AppState {
-        mcp_sessions: Arc::new(Default::default()),
         profile_lifecycle: tokio::sync::Mutex::new(()),
         connect_transition: Arc::new(tokio::sync::RwLock::new(())),
         workers: std::sync::Mutex::new(workers),
@@ -1147,8 +1086,6 @@ async fn initialize_profile_state(
         asset_logo_service,
         addon_service,
         connect_sync_service,
-        ai_provider_service,
-        ai_chat_service,
         data_root,
         db_path,
         db_access,
@@ -1176,11 +1113,6 @@ async fn initialize_profile_state(
         allocation_target_service,
         drift_service,
         rebalance_service,
-        pat_repository,
-        mcp_audit_repository,
-        agent_environment,
-        mcp_enabled: config.mcp_enabled,
-        mcp_audit_enabled: config.mcp_audit_enabled,
     });
 
     #[cfg(feature = "device-sync")]

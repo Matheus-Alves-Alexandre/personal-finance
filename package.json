@@ -16,6 +16,7 @@
     "dev:web:log": "node scripts/dev-web.mjs --file-log",
     "build": "pnpm --filter frontend build",
     "build:tauri": "pnpm --filter frontend build:tauri",
+    "build:personal": "node scripts/build-personal.mjs",
     "build:types": "pnpm -r run build:types",
     "hooks:install": "git config core.hooksPath .githooks",
     "preview": "pnpm --filter frontend preview",

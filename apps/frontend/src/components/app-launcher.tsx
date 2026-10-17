@@ -105,7 +105,14 @@ export function AppLauncher() {
     : "text-muted-foreground mr-2 h-4 w-4";
 
   // Recent items state
-  const [recentItems, setRecentItems] = usePersistentState<RecentItem[]>(RECENT_ITEMS_KEY, []);
+  const [storedRecentItems, setRecentItems] = usePersistentState<RecentItem[]>(
+    RECENT_ITEMS_KEY,
+    [],
+  );
+  const removedRoutes = new Set(["/assistant", "/settings/ai-providers", "/settings/agent-access"]);
+  const recentItems = storedRecentItems.filter(
+    (item) => item.type !== "action" || !removedRoutes.has(item.id.split(/[?#]/)[0]),
+  );
 
   const addRecentItem = useCallback(
     (item: Omit<RecentItem, "timestamp">) => {

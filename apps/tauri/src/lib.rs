@@ -8,7 +8,6 @@ mod database;
 mod domain_events;
 mod events;
 mod listeners;
-mod mcp;
 mod portfolio_jobs;
 mod profile_lifecycle;
 mod profile_startup;
@@ -22,6 +21,7 @@ mod menu;
 #[cfg(desktop)]
 mod updater;
 
+#[cfg(feature = "device-sync")]
 use std::sync::Arc;
 
 use dotenvy::dotenv;
@@ -96,9 +96,6 @@ mod desktop {
 
     /// Opens the database asynchronously so the startup gate can render.
     pub fn setup(handle: AppHandle) {
-        // Embedded MCP server: clear any stale lock file from an unclean
-        // shutdown before the runtime's workers may start it again.
-        mcp::remove_stale_lock(&handle);
         // Let the window render while the database opens. Database-dependent
         // commands stay gated until initialization succeeds; DatabaseRuntime
         // owns the background workers and retains their handles.
@@ -234,9 +231,6 @@ pub fn run() {
     builder
         .setup(|app| {
             let handle = app.handle().clone();
-
-            // Embedded MCP server state (commands need it managed up front)
-            handle.manage(mcp::McpServerState::default());
 
             // Registry failures are recoverable. Platform setup opens profiles
             // asynchronously while this state serves the startup recovery UI.
@@ -545,34 +539,6 @@ pub fn run() {
             // Provider settings commands
             commands::providers_settings::get_market_data_providers_settings,
             commands::providers_settings::update_market_data_provider_settings,
-            // AI provider commands
-            commands::ai_providers::get_ai_providers,
-            commands::ai_providers::update_ai_provider_settings,
-            commands::ai_providers::set_default_ai_provider,
-            commands::ai_providers::list_ai_models,
-            // AI chat commands
-            commands::ai_chat::stream_ai_chat,
-            commands::ai_chat::list_ai_threads,
-            commands::ai_chat::get_ai_thread,
-            commands::ai_chat::get_ai_thread_messages,
-            commands::ai_chat::update_ai_thread,
-            commands::ai_chat::delete_ai_thread,
-            commands::ai_chat::add_ai_thread_tag,
-            commands::ai_chat::remove_ai_thread_tag,
-            commands::ai_chat::get_ai_thread_tags,
-            commands::ai_chat::update_tool_result,
-            // MCP server (Agent Access) commands
-            commands::mcp::mcp_get_status,
-            commands::mcp::mcp_set_enabled,
-            commands::mcp::mcp_set_audit_enabled,
-            commands::mcp::mcp_set_auto_start,
-            commands::mcp::mcp_start,
-            commands::mcp::mcp_stop,
-            commands::mcp::mcp_list_audit_log,
-            commands::mcp::mcp_purge_audit_log,
-            commands::mcp::mcp_list_tokens,
-            commands::mcp::mcp_create_token,
-            commands::mcp::mcp_delete_token,
             // Addon commands
             commands::addon::extract_addon_zip,
             commands::addon::install_addon_zip,
@@ -821,7 +787,7 @@ pub fn run() {
             // Desktop quits and restarts end here, including macOS Quit, which
             // skips ExitRequested. The Windows updater does not: its installer
             // step exits the process itself. Releasing the database also stops
-            // the MCP server (deleting mcp.lock) and the device sync engine.
+            // the device sync engine.
             #[cfg(desktop)]
             if matches!(event, tauri::RunEvent::Exit) {
                 profiles::release_for_exit(_handle);

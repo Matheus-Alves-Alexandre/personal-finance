@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from "@/test/render";
 import { describe, expect, it, vi } from "vitest";
 import { AlternativeAssetKind } from "@/lib/types";
 import { AssetDetailsSheet, type AssetDetailsSheetAsset } from "./asset-details-sheet";
+import i18n from "i18next";
+import { I18nextProvider } from "react-i18next";
+import ptAsset from "@/i18n/locales/pt/asset.json";
 
 vi.mock("@/hooks/use-accounts", () => ({ useAccounts: () => ({ accounts: [] }) }));
 vi.mock("../hooks/use-loan-calculation", () => ({
@@ -41,6 +44,19 @@ const props = { onOpenChange: vi.fn(), onSave: vi.fn() };
 const originalAmount = () => screen.getByRole("textbox", { name: "Original amount" });
 
 describe("AssetDetailsSheet unsaved edits", () => {
+  it("localizes the saved liability type when editing in Brazilian Portuguese", async () => {
+    const localized = i18n.cloneInstance({ lng: "pt" });
+    localized.addResourceBundle("pt", "asset", ptAsset);
+    render(
+      <I18nextProvider i18n={localized}>
+        <AssetDetailsSheet {...props} open asset={loan} />
+      </I18nextProvider>,
+    );
+    expect(await screen.findByRole("combobox", { name: "Tipo de passivo" })).toHaveTextContent(
+      "Financiamento imobiliário",
+    );
+  });
+
   it("keeps an unsaved edit when the parent re-renders with the same asset", () => {
     const view = render(<AssetDetailsSheet {...props} open asset={loan} />);
     fireEvent.change(originalAmount(), { target: { value: "1300" } });

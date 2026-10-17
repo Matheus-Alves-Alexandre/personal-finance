@@ -59,20 +59,6 @@ export type {
   UpdateToolResultRequest,
 } from "../types";
 
-// Re-export AI types from features/ai-assistant
-export type {
-  AiChatMessage,
-  AiChatModelConfig,
-  AiSendMessageRequest,
-  AiStreamEvent,
-  AiThread,
-  AiToolCall,
-  AiToolResult,
-  AiUsageStats,
-  ListThreadsRequest,
-  ThreadPage,
-} from "@/features/ai-assistant/types";
-
 /**
  * Runtime environment identifier - always "web" for web builds
  */
@@ -350,25 +336,8 @@ export {
 } from "../shared/connect";
 
 // AI Providers Commands
-export {
-  getAiProviders,
-  listAiModels,
-  setDefaultAiProvider,
-  updateAiProviderSettings,
-} from "../shared/ai-providers";
 
 // AI Threads Commands
-export {
-  addAiThreadTag,
-  deleteAiThread,
-  getAiThread,
-  getAiThreadMessages,
-  getAiThreadTags,
-  listAiThreads,
-  removeAiThreadTag,
-  updateAiThread,
-  updateToolResult,
-} from "../shared/ai-threads";
 
 // Health Center Commands
 export {
@@ -408,23 +377,8 @@ export { exportDataFile } from "./exports";
 // ============================================================================
 
 // Agent Access Commands (PATs + audit log; MCP server controls are desktop-only stubs)
-export {
-  createAgentAccessToken,
-  getAgentAccessStatus,
-  getMcpStatus,
-  listAgentAccessTokens,
-  listAgentAuditLog,
-  purgeAgentAuditLog,
-  deleteAgentAccessToken,
-  setMcpAuditEnabled,
-  setMcpEnabled,
-  setMcpAutoStart,
-  startMcp,
-  stopMcp,
-} from "./agent-access";
 
 // AI Streaming (web-specific HTTP fetch implementation)
-export { streamAiChat } from "./ai-streaming";
 
 // Event Listeners (web-specific SSE implementation)
 export {

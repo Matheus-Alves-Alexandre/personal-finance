@@ -46,6 +46,13 @@ afterEach(() => {
 });
 
 describe("SettingsLayout", () => {
+  it("keeps local accounts accessible without promoting Connect in an offline build", () => {
+    renderAt("/settings", 1280);
+
+    expect(screen.getByText(copy.nav.items.accounts)).toBeInTheDocument();
+    expect(screen.queryByText(copy.nav.items.connect)).not.toBeInTheDocument();
+  });
+
   // Regression: a second, CSS-hidden copy of the page opened its dialogs twice.
   it.each([
     ["desktop", 1280],
@@ -76,20 +83,16 @@ describe("SettingsLayout", () => {
     expect(mounts).toBe(0);
   });
 
-  // The MCP server ships with the desktop app and the web server, not the phone apps.
   it.each([
-    ["the desktop app", 1280, true, false, true],
-    ["the web app on a phone", 390, false, true, true],
-    ["the phone app", 390, true, true, false],
-  ])("lists AI Agent Access in %s", (_, width, isTauri, isMobile, listed) => {
+    ["the desktop app", 1280, true, false],
+    ["the web app on a phone", 390, false, true],
+    ["the phone app", 390, true, true],
+  ])("keeps AI and agent connections unavailable in %s", (_, width, isTauri, isMobile) => {
     mocks.platform = { isTauri, isMobile };
     renderAt("/settings", width);
 
-    expect(screen.getByText(copy.nav.items.ai_providers)).toBeInTheDocument();
-    if (listed) {
-      expect(screen.getByText(copy.nav.items.agent_access)).toBeInTheDocument();
-    } else {
-      expect(screen.queryByText(copy.nav.items.agent_access)).not.toBeInTheDocument();
-    }
+    expect(screen.queryByText(copy.nav.items.ai_providers)).not.toBeInTheDocument();
+    expect(screen.queryByText(copy.nav.items.agent_access)).not.toBeInTheDocument();
+    expect(screen.getByText(copy.nav.items.accounts)).toBeInTheDocument();
   });
 });

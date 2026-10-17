@@ -6,6 +6,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { useConnectUrl } from "@/features/wealthfolio-connect/hooks/use-connect-url";
 import { useSettingsContext } from "@/lib/settings-provider";
 import { cn } from "@/lib/utils";
+import { CONNECT_ENABLED } from "@/lib/connect-config";
 import { Button } from "@wealthfolio/ui/components/ui/button";
 import { Icons } from "@wealthfolio/ui/components/ui/icons";
 import { AnimatePresence, motion } from "motion/react";
@@ -37,7 +38,7 @@ const OnboardingPage = () => {
   const [isStepValid, setIsStepValid] = useState(true);
   const settingsStepRef = useRef<OnboardingStep2Handle>(null);
   const appearanceStepRef = useRef<OnboardingAppearanceHandle>(null);
-  const maxSteps = isMobile ? MOBILE_MAX_STEPS : DESKTOP_MAX_STEPS;
+  const maxSteps = isMobile || !CONNECT_ENABLED ? MOBILE_MAX_STEPS : DESKTOP_MAX_STEPS;
   const completionRoute = isMobile ? "/settings" : "/settings/accounts";
   const isFinalStep = currentStep === maxSteps;
   const isAppearanceStep = currentStep === 3;
@@ -133,7 +134,7 @@ const OnboardingPage = () => {
                 onValidityChange={setIsStepValid}
               />
             )}
-            {!isMobile && currentStep === 4 && <OnboardingConnect />}
+            {CONNECT_ENABLED && !isMobile && currentStep === 4 && <OnboardingConnect />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -155,7 +156,7 @@ const OnboardingPage = () => {
                 </Button>
               </div>
               <div className="order-1 flex flex-col gap-2 sm:order-2 sm:flex-row sm:gap-3">
-                {!isMobile && (
+                {CONNECT_ENABLED && !isMobile && (
                   <Button asChild variant="outline" className="order-2 sm:order-1">
                     <ExternalLink href={connectLink}>
                       {t("onboarding:buttons.subscribeConnect")}

@@ -642,7 +642,7 @@ export function AlternativeAssetQuickAddModal({
                       onValueChange={(v) => updateFormData("liabilityType", v)}
                       options={LIABILITY_TYPES.map((type) => ({
                         value: type.value,
-                        label: type.label,
+                        label: t(`asset:altContent.liabilityType.${type.value}`),
                       }))}
                       placeholder={t("asset:quickAdd.select_type")}
                       sheetTitle={t("asset:quickAdd.select_liability_type_title")}

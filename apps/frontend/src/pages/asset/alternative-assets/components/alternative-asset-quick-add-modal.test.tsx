@@ -4,6 +4,9 @@ import type { ReactNode } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { AlternativeAssetKind } from "@/lib/types";
 import { AlternativeAssetQuickAddModal } from "./alternative-asset-quick-add-modal";
+import i18n from "i18next";
+import { I18nextProvider } from "react-i18next";
+import ptAsset from "@/i18n/locales/pt/asset.json";
 
 const create = vi.hoisted(() => vi.fn().mockResolvedValue({ assetId: "created" }));
 const preview = vi.hoisted(() => vi.fn());
@@ -110,6 +113,32 @@ beforeEach(() => {
 
 const show = (ui: ReactNode) =>
   render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
+
+it("shows Brazilian liability names while preserving the saved subtype codes", async () => {
+  const localized = i18n.cloneInstance({ lng: "pt" });
+  localized.addResourceBundle("pt", "asset", ptAsset);
+  show(
+    <I18nextProvider i18n={localized}>
+      <AlternativeAssetQuickAddModal
+        open
+        onOpenChange={() => undefined}
+        defaultKind={AlternativeAssetKind.LIABILITY}
+      />
+    </I18nextProvider>,
+  );
+  const selector = await screen.findByRole("combobox", { name: "Selecionar tipo de passivo" });
+  expect(selector).toHaveValue("mortgage");
+  for (const [value, label] of [
+    ["mortgage", "Financiamento imobiliário"],
+    ["auto_loan", "Financiamento de veículo"],
+    ["student_loan", "Financiamento estudantil"],
+    ["personal_loan", "Empréstimo pessoal ou consignado"],
+    ["heloc", "Crédito com garantia de imóvel"],
+    ["other", "Outro"],
+  ]) {
+    expect(screen.getByRole("option", { name: label })).toHaveValue(value);
+  }
+});
 
 it.each([undefined, "auto_loan"])(
   "saves the displayed liability type without touching the selector (preset %s)",

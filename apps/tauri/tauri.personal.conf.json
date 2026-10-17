@@ -1,0 +1,30 @@
+{
+  "productName": "Personal Finance",
+  "mainBinaryName": "PersonalFinance",
+  "bundle": {
+    "active": false,
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": []
+    }
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "create": true,
+        "dragDropEnabled": false,
+        "fullscreen": false,
+        "resizable": true,
+        "theme": "Light",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "title": "Personal Finance",
+        "width": 1440,
+        "height": 960
+      }
+    ]
+  }
+}
