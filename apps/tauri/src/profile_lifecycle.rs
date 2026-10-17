@@ -256,7 +256,12 @@ async fn linux_sleep_inhibitor(manager: &zbus::Proxy<'_>) -> Option<zbus::zvaria
     match manager
         .call(
             "Inhibit",
-            &("sleep", "Personal Finance", "Lock protected profiles", "delay"),
+            &(
+                "sleep",
+                "Personal Finance",
+                "Lock protected profiles",
+                "delay",
+            ),
         )
         .await
     {

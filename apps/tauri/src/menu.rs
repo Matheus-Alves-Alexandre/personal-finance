@@ -86,7 +86,9 @@ pub fn handle_menu_event(app: &AppHandle, event_id: &str) {
                         // Already up-to-date - show native dialog
                         app_handle
                             .dialog()
-                            .message("You're already running the latest version of Personal Finance.")
+                            .message(
+                                "You're already running the latest version of Personal Finance.",
+                            )
                             .title("No Updates Available")
                             .show(|_| {});
                     }
