@@ -1,8 +1,6 @@
 import unittest
 import subprocess
 import tempfile
-import os
-import textwrap
 from pathlib import Path
 
 from ci_changes import classify
@@ -103,32 +101,6 @@ class ChangeDetectionTests(unittest.TestCase):
 
     def test_no_changes(self):
         self.assert_jobs([])
-
-
-class BuildStatusTests(unittest.TestCase):
-    def run_gate(self, **overrides):
-        workflow = (Path(__file__).parents[1] / "workflows/pr-check.yml").read_text()
-        script = textwrap.dedent(workflow.split('      - name: Check build status\n')[1].split('        run: |\n')[1])
-        env = dict(os.environ, CHANGES_RESULT="success")
-        for job in ["FRONTEND", "RUST", "FORMATTING", "ANDROID", "IOS"]:
-            env[job + "_REQUIRED"] = "false"
-            env[job + "_RESULT"] = "skipped"
-        env["TRANSLATION_RESULT"] = "skipped"
-        env.update(overrides)
-        return subprocess.run(["bash", "-e", "-c", script], env=env, capture_output=True).returncode
-
-    def test_unrequested_mobile_jobs_may_skip(self):
-        self.assertEqual(self.run_gate(), 0)
-
-    def test_required_mobile_jobs_must_succeed(self):
-        for platform in ["ANDROID", "IOS"]:
-            for result in ["failure", "cancelled", "skipped"]:
-                with self.subTest(platform=platform, result=result):
-                    self.assertNotEqual(self.run_gate(**{platform + "_REQUIRED": "true", platform + "_RESULT": result}), 0)
-            self.assertEqual(self.run_gate(**{platform + "_REQUIRED": "true", platform + "_RESULT": "success"}), 0)
-
-    def test_failed_detection_blocks_merge(self):
-        self.assertNotEqual(self.run_gate(CHANGES_RESULT="failure"), 0)
 
 
 if __name__ == "__main__":

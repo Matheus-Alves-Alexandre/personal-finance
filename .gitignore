@@ -54,6 +54,7 @@ tsconfig.node.tsbuildinfo
 .temp
 .tmp
 .eslintcache
+__pycache__/
 .stylelintcache
 
 # Database

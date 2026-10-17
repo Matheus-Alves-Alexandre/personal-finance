@@ -158,17 +158,18 @@ npx playwright test && npx playwright show-report
 
 ---
 
-## Not in CI (tracked follow-up)
+## Continuous integration
 
-None of the specs in this directory run in CI. `pr-check.yml` installs
-Playwright only for `pnpm test:e2e:addon-sandbox`, a standalone frontend-only
-harness; the app suite needs a built Rust backend on :8088, a seeded database,
-and serial execution against shared state.
+`pr-check.yml` runs the complete application suite in the `Application E2E` job.
+It builds the Rust backend before starting the existing runner, which prepares a
+fresh synthetic database and runs the tests serially. The isolated profile suite
+runs separately in the same job. Opt-in live-provider specs remain opt-in. HTML
+reports, failure traces and test logs are uploaded as CI artifacts.
 
-Standing that up is its own change — it should add the whole suite as one job,
-not smuggle individual specs in. Until then these specs are a local gate only:
-run `pnpm test:e2e` before merging anything that touches activities, import, or
-holdings.
+The frontend check also retains the standalone net-worth layout and addon
+sandbox suites. Run `pnpm test:e2e` locally when investigating activities,
+import or holdings changes. See
+[the CI gate](../docs/architecture/automated-checks.md).
 
 ---
 

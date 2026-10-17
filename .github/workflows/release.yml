@@ -7,7 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  quality:
+    name: Validate exact release commit
+    uses: ./.github/workflows/pr-check.yml
+    permissions:
+      contents: read
+
   release:
+    needs: quality
     permissions:
       contents: write
       # Windows Authenticode signing authenticates to Azure Artifact Signing with OIDC.
@@ -220,6 +227,7 @@ jobs:
           retention-days: 7
 
   prebuild-server-linux:
+    needs: quality
     # Standalone server tarball for self-hosters (Proxmox LXC, bare metal, systemd).
     # Tracks: https://github.com/wealthfolio/wealthfolio/issues/563
     # Built on ubuntu-22.04 (glibc 2.35) for forward compatibility with Debian 12+/Ubuntu 22.04+.

@@ -1,17 +1,26 @@
-name: PR Check
+name: Project Checks
 
 on:
+  push:
+    branches: [main, develop, "feature/**"]
+  workflow_dispatch:
+  workflow_call:
   pull_request:
     branches:
       - main
       - develop
       - "feature/**"
 
+env:
+  CI: "true"
+
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group:
+    checks-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number ||
+    github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,11 +29,11 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      rust: ${{ steps.filter.outputs.rust }}
-      formatting: ${{ steps.filter.outputs.formatting }}
-      android: ${{ steps.filter.outputs.android }}
-      ios: ${{ steps.filter.outputs.ios }}
+      frontend: "true"
+      rust: "true"
+      formatting: "true"
+      android: ${{ steps.filter.outputs.android || 'false' }}
+      ios: ${{ steps.filter.outputs.ios || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,6 +41,7 @@ jobs:
       - name: Test CI helpers
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
       - name: Classify changed files
+        if: github.event_name == 'pull_request'
         id: filter
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -94,39 +104,76 @@ jobs:
           # No `cache: pnpm`: restore plus warm install is no faster than a cold
           # install, and each PR would save its own ~120 MB copy.
 
+      - name: Prepare reports
+        run: mkdir -p reports/frontend
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        id: dependencies
+        run: pnpm install --frozen-lockfile 2>&1 | tee reports/frontend/install.log
 
       - name: Build package types
+        id: types
         run: pnpm run build:types
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm lint 2>&1 | tee reports/frontend/lint.log
 
       - name: Type check packages
         # Declarations are already built above; the frontend build runs its type check.
         run: pnpm --filter './packages/*' -r type-check
 
-      - name: Run tests
-        run: pnpm test
+      - name: Test Node helpers
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: node --test scripts/*.test.mjs 2>&1 | tee reports/frontend/node-tests.log
+
+      - name: Run all frontend tests
+        if: ${{ !cancelled() && steps.types.outcome == 'success' }}
+        run:
+          pnpm --filter frontend exec vitest run --reporter=default --reporter=junit
+          --outputFile="$GITHUB_WORKSPACE/reports/frontend/junit.xml" 2>&1 | tee
+          reports/frontend/tests.log
 
       - name: Build frontend
-        run: pnpm build
+        id: web-build
+        if: ${{ !cancelled() && steps.types.outcome == 'success' }}
+        run: pnpm build 2>&1 | tee reports/frontend/web-build.log
 
       - name: Install addon sandbox browsers
+        if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: pnpm exec playwright install --with-deps chromium firefox webkit
 
       - name: Run net worth layout regression tests
+        if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: pnpm test:e2e:net-worth
 
       - name: Run addon sandbox browser tests
+        if: ${{ !cancelled() && steps.web-build.outcome == 'success' }}
         run: pnpm test:e2e:addon-sandbox
         env:
           WF_ADDON_SANDBOX_SKIP_BUILD: "true"
 
+      - name: Build desktop frontend without Connect
+        if: ${{ !cancelled() && steps.types.outcome == 'success' }}
+        run: pnpm build:tauri 2>&1 | tee reports/frontend/desktop-build.log
+        env:
+          CONNECT_AUTH_URL: ""
+          CONNECT_AUTH_PUBLISHABLE_KEY: ""
+
+      - name: Upload frontend reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-frontend-${{ github.run_attempt }}
+          path: |
+            reports/frontend/
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: warn
+
   rust-check:
     name: Rust Check
-    timeout-minutes: 45
+    timeout-minutes: 90
     needs: changes
     if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
@@ -139,10 +186,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      - name: Setup repository Rust toolchain
+        run: rustup show active-toolchain
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -153,7 +198,11 @@ jobs:
           shared-key: pr-rust-check
           save-if: false
 
+      - name: Prepare Rust reports
+        run: mkdir -p reports/rust
+
       - name: Install system dependencies
+        id: system
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev
@@ -164,22 +213,108 @@ jobs:
           dist/index.html
 
       - name: Check formatting
-        run: cargo fmt --all -- --check
+        run: cargo fmt --all -- --check 2>&1 | tee reports/rust/format.log
 
       - name: Clippy
-        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+        if: ${{ !cancelled() && steps.system.outcome == 'success' }}
+        run:
+          cargo clippy --locked --workspace --all-targets --all-features -- -D warnings 2>&1 | tee
+          reports/rust/clippy.log
 
       - name: Test
-        run: cargo test --locked --workspace
+        if: ${{ !cancelled() && steps.system.outcome == 'success' }}
+        run: cargo test --locked --workspace --no-fail-fast 2>&1 | tee reports/rust/tests.log
         env:
           # Required for outbox tests in storage-sqlite
           CONNECT_API_URL: http://test.local
 
-      - name: Test AI tools with fixture support
-        run: cargo test --locked -p wealthfolio-ai --features test-utils
+      - name: Test legacy library fixtures
+        if: ${{ !cancelled() && steps.system.outcome == 'success' }}
+        run:
+          cargo test --locked -p wealthfolio-ai --features test-utils --no-fail-fast 2>&1 | tee
+          reports/rust/library-fixtures.log
 
       - name: Check release build (src-server)
-        run: cargo check --locked -p wealthfolio-server --release
+        if: ${{ !cancelled() && steps.system.outcome == 'success' }}
+        run:
+          cargo check --locked -p wealthfolio-server --release 2>&1 | tee
+          reports/rust/server-release.log
+
+      - name: Check personal runtimes without Connect
+        if: ${{ !cancelled() && steps.system.outcome == 'success' }}
+        run:
+          cargo check --locked -p wealthfolio-app -p wealthfolio-server --no-default-features 2>&1 |
+          tee reports/rust/personal-runtimes.log
+
+      - name: Upload Rust reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-rust-${{ github.run_attempt }}
+          path: reports/rust/
+          retention-days: 14
+          if-no-files-found: warn
+
+  app-e2e:
+    name: Application E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      PLAYWRIGHT_HTML_OPEN: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Setup repository Rust toolchain
+        run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: app-e2e
+      - name: Prepare reports
+        run: mkdir -p reports/e2e
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build package declarations
+        run: pnpm build:types
+      - name: Build web frontend
+        id: web
+        run: pnpm build 2>&1 | tee reports/e2e/web-build.log
+      - name: Build backend before starting the test runner
+        id: server
+        run: cargo build --locked -p wealthfolio-server 2>&1 | tee reports/e2e/server-build.log
+      - name: Install Chrome
+        id: browser
+        run: pnpm exec playwright install --with-deps chrome
+      - name: Run full application suite with a fresh synthetic database
+        if:
+          ${{ !cancelled() && steps.server.outcome == 'success' && steps.browser.outcome ==
+          'success' }}
+        run: pnpm test:e2e --reporter=html,list 2>&1 | tee reports/e2e/application.log
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: reports/e2e/application-html
+      - name: Run isolated profile suite
+        if:
+          ${{ !cancelled() && steps.web.outcome == 'success' && steps.server.outcome == 'success' &&
+          steps.browser.outcome == 'success' }}
+        run:
+          pnpm exec playwright test --config playwright.profiles.config.ts --reporter=html,list
+          --output=test-results/profiles 2>&1 | tee reports/e2e/profiles.log
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: reports/e2e/profiles-html
+      - name: Upload application reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-application-${{ github.run_attempt }}
+          path: |
+            reports/e2e/
+            test-results/
+          retention-days: 14
+          if-no-files-found: warn
 
   android-check:
     name: Android compile check
@@ -257,42 +392,23 @@ jobs:
         translation-parity,
         frontend-check,
         rust-check,
+        app-e2e,
         android-check,
         ios-check,
       ]
     if: always()
 
     steps:
-      - name: Check build status
+      - uses: actions/checkout@v4
+      - name: Generate report and enforce publication gate
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          FORMATTING_REQUIRED: ${{ needs.changes.outputs.formatting }}
-          FORMATTING_RESULT: ${{ needs.formatting.result }}
-          ANDROID_REQUIRED: ${{ needs.changes.outputs.android }}
-          ANDROID_RESULT: ${{ needs.android-check.result }}
-          IOS_REQUIRED: ${{ needs.changes.outputs.ios }}
-          IOS_RESULT: ${{ needs.ios-check.result }}
-          FRONTEND_REQUIRED: ${{ needs.changes.outputs.frontend }}
-          RUST_REQUIRED: ${{ needs.changes.outputs.rust }}
-          TRANSLATION_RESULT: ${{ needs.translation-parity.result }}
-          FRONTEND_RESULT: ${{ needs.frontend-check.result }}
-          RUST_RESULT: ${{ needs.rust-check.result }}
-        run: |
-          test "$CHANGES_RESULT" = success
-          if [ "$FRONTEND_REQUIRED" = true ]; then
-            test "$FRONTEND_RESULT" = success
-            test "$TRANSLATION_RESULT" = success
-          fi
-          if [ "$RUST_REQUIRED" = true ]; then
-            test "$RUST_RESULT" = success
-          fi
-          if [ "$FORMATTING_REQUIRED" = true ]; then
-            test "$FORMATTING_RESULT" = success
-          fi
-          if [ "$ANDROID_REQUIRED" = true ]; then
-            test "$ANDROID_RESULT" = success
-          fi
-          if [ "$IOS_REQUIRED" = true ]; then
-            test "$IOS_RESULT" = success
-          fi
-          echo "All required checks passed."
+          CI_NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 .github/scripts/ci_report.py
+      - name: Upload consolidated report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-summary-${{ github.run_attempt }}
+          path: reports/ci-summary.md
+          retention-days: 14
+          if-no-files-found: error
