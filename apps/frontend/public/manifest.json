@@ -1,6 +1,6 @@
 {
-  "name": "Wealthfolio",
-  "short_name": "Wealthfolio",
+  "name": "Personal Finance",
+  "short_name": "Personal Finance",
   "id": "/",
   "start_url": "/",
   "display": "standalone",

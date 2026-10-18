@@ -39,7 +39,7 @@
       }
     }
   },
-  "productName": "Wealthfolio",
+  "productName": "Personal Finance",
   "mainBinaryName": "Wealthfolio",
   "version": "3.10.0",
   "identifier": "com.teymz.wealthfolio",
@@ -75,7 +75,7 @@
         "theme": "Light",
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "title": "Wealthfolio",
+        "title": "Personal Finance",
         "width": 1440,
         "height": 960
       }

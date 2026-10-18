@@ -616,7 +616,7 @@ export function ProfileShell({ children }: { children: ReactNode }) {
           closeFailed
             ? t("profiles.lockFailed", { defaultValue: "Couldn’t finish locking" })
             : phase === "closing"
-              ? t("profiles.locking", { defaultValue: "Locking Wealthfolio…" })
+              ? t("profiles.locking", { defaultValue: "Locking Personal Finance…" })
               : errorCode === "PROFILE_CONNECTION_FAILED" || errorCode === "PROFILE_AUTH_REQUIRED"
                 ? t("profiles.connectionFailed")
                 : undefined

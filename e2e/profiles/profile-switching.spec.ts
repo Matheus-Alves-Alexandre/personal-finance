@@ -23,7 +23,7 @@ async function switchProfile(page: Page, current: string, next: string) {
   await page.getByRole("button", { name: `Profile menu for ${current}` }).click();
   await page.getByRole("menuitem", { name: "Switch profile", exact: true }).click();
   await expect(page.locator(".app-shell").first()).not.toBeVisible();
-  await expect(page.getByRole("heading", { name: "Who's using Wealthfolio?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who's using Personal Finance?" })).toBeVisible();
   await page.screenshot({
     path: `/tmp/wealthfolio-profile-chooser-${current === "Profile B" ? "dark" : "light"}.png`,
   });
@@ -99,9 +99,9 @@ test("real A → B → A reloads, different appearance, cross-tab route reset, a
   await page.getByRole("button", { name: "More options" }).click();
   await expect(page.getByRole("heading", { name: "More", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Profile menu for Profile A" }).click();
-  await page.getByRole("button", { name: "Lock Wealthfolio" }).click();
+  await page.getByRole("button", { name: "Lock Personal Finance" }).click();
   await expect(page.locator(".app-shell").first()).not.toBeVisible();
-  await expect(page.getByRole("heading", { name: "Who's using Wealthfolio?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who's using Personal Finance?" })).toBeVisible();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.screenshot({ path: "/tmp/wealthfolio-profile-lock-mobile.png" });
   await page.getByRole("button", { name: "Profile A", exact: true }).click();
@@ -232,7 +232,7 @@ test("sets, changes, and recovers a password with confirmation", async ({ page, 
   for (const flow of ["setup", "change", "recovery"]) {
     await page.getByRole("button", { name: `Profile menu for ${profile.name}` }).click();
     if (flow === "recovery") {
-      await page.getByRole("menuitem", { name: "Lock Wealthfolio" }).click();
+      await page.getByRole("menuitem", { name: "Lock Personal Finance" }).click();
       await page.getByRole("button", { name: profile.name, exact: true }).click();
       await page.getByRole("button", { name: "Forgot password?" }).click();
       await page.getByLabel("Recovery code", { exact: true }).fill(recoveryCode);

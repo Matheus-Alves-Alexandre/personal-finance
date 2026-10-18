@@ -79,7 +79,7 @@ export default function AboutSettingsPage() {
             className="h-12 w-12 rounded-md shadow"
           />
           <div className="flex flex-col">
-            <CardTitle className="text-xl">Wealthfolio</CardTitle>
+            <CardTitle className="text-xl">Personal Finance</CardTitle>
             <CardDescription>
               {t("settings:about_version", { version: version || "N/A" })}
             </CardDescription>
@@ -100,7 +100,7 @@ export default function AboutSettingsPage() {
                 size="sm"
                 className="inline-flex items-center gap-2"
               >
-                <ExternalLink href="https://wealthfolio.app">
+                <ExternalLink href="https://github.com/Matheus-Alves-Alexandre/personal-finance">
                   <Icons.Globe className="h-4 w-4" />
                   {t("settings:about_website_button")}
                 </ExternalLink>
@@ -111,7 +111,7 @@ export default function AboutSettingsPage() {
                 size="sm"
                 className="inline-flex items-center gap-2"
               >
-                <ExternalLink href="https://wealthfolio.app/docs/introduction/">
+                <ExternalLink href="https://github.com/Matheus-Alves-Alexandre/personal-finance/blob/main/PERSONAL_FINANCE.md">
                   <Icons.FileText className="h-4 w-4" />
                   {t("settings:about_docs_button")}
                 </ExternalLink>
@@ -122,7 +122,7 @@ export default function AboutSettingsPage() {
                 size="sm"
                 className="inline-flex items-center gap-2"
               >
-                <ExternalLink href="https://github.com/wealthfolio/wealthfolio">
+                <ExternalLink href="https://github.com/Matheus-Alves-Alexandre/personal-finance">
                   <Icons.ExternalLink className="h-4 w-4" />
                   {t("settings:about_github_button")}
                 </ExternalLink>
@@ -182,10 +182,7 @@ export default function AboutSettingsPage() {
           <Separator />
 
           <div className="space-y-4">
-            <p className="text-muted-foreground text-sm">
-              {t("settings:about_support_message")}{" "}
-              <span className="select-all font-mono font-semibold">support@wealthfolio.app</span>
-            </p>
+            <p className="text-muted-foreground text-sm">{t("settings:about_support_message")} </p>
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 asChild
@@ -193,18 +190,7 @@ export default function AboutSettingsPage() {
                 size="sm"
                 className="inline-flex items-center gap-2"
               >
-                <ExternalLink href="mailto:support@wealthfolio.app">
-                  <Icons.ExternalLink className="h-4 w-4" />
-                  {t("settings:about_email_button")}
-                </ExternalLink>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="inline-flex items-center gap-2"
-              >
-                <ExternalLink href="https://github.com/wealthfolio/wealthfolio/issues">
+                <ExternalLink href="https://github.com/Matheus-Alves-Alexandre/personal-finance/issues">
                   <Icons.AlertCircle className="h-4 w-4" />
                   {t("settings:about_report_issue_button")}
                 </ExternalLink>
@@ -214,25 +200,19 @@ export default function AboutSettingsPage() {
             <Separator />
 
             <p className="text-muted-foreground text-sm">
+              Personal Finance · Base:{" "}
               <ExternalLink
-                href="https://wealthfolio.app/legal/privacy-policy"
+                href="https://github.com/wealthfolio/wealthfolio"
                 className="hover:text-foreground underline underline-offset-4"
               >
-                {t("settings:about_privacy_policy")}
+                Wealthfolio
               </ExternalLink>
-              <span className="mx-2">•</span>
+              {" · "}
               <ExternalLink
-                href="https://wealthfolio.app/legal/terms-of-use"
+                href="https://github.com/Matheus-Alves-Alexandre/personal-finance/blob/main/LICENSE"
                 className="hover:text-foreground underline underline-offset-4"
               >
-                {t("settings:about_terms_of_use")}
-              </ExternalLink>
-              <span className="mx-2">•</span>
-              <ExternalLink
-                href="https://wealthfolio.app"
-                className="hover:text-foreground underline underline-offset-4"
-              >
-                {t("settings:about_website_button")}
+                AGPL-3.0
               </ExternalLink>
             </p>
           </div>

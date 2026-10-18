@@ -84,10 +84,10 @@ beforeEach(() => {
   mocks.isWeb = true;
   mocks.command.mockResolvedValue(unlocked);
 });
-it.each(["Lock Wealthfolio", "Switch profile"])(
+it.each(["Lock Personal Finance", "Switch profile"])(
   "unmounts financial providers immediately on %s from the profile menu",
   async (action) => {
-    if (action === "Lock Wealthfolio")
+    if (action === "Lock Personal Finance")
       mocks.command.mockResolvedValue({
         ...unlocked,
         profiles: [{ ...profile, lockEnabled: true }],
@@ -109,7 +109,7 @@ it.each(["Lock Wealthfolio", "Switch profile"])(
     expect(mocks.command).toHaveBeenCalledWith("lock_profile", { preserveAuth: false });
     expect(
       await screen.findByRole("heading", {
-        name: "Who's using Wealthfolio?",
+        name: "Who's using Personal Finance?",
       }),
     ).toBeInTheDocument();
   },
@@ -121,7 +121,7 @@ it.each([true, false])(
     mount();
     expect(await screen.findByText("Private portfolio")).toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: "Who's using Wealthfolio?" }),
+      screen.queryByRole("heading", { name: "Who's using Personal Finance?" }),
     ).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole("button", { name: "Profile menu for Personal" }), {
       key: "Enter",
@@ -129,7 +129,9 @@ it.each([true, false])(
     expect(await screen.findByRole("menuitem", { name: "Profile settings" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Add profile" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Switch profile" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: "Lock Wealthfolio" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Lock Personal Finance" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("menuitem", { name: "Profile settings" }));
     fireEvent.click(await screen.findByRole("button", { name: "Enable password" }));
     expect(screen.getByLabelText("New password")).toBeInTheDocument();
@@ -144,7 +146,7 @@ it.each([
   const failed = { profiles: [], session: null, starting: false, startupError };
   mocks.command.mockResolvedValue(failed);
   mount();
-  expect(await screen.findByText("We couldn’t open Wealthfolio")).toBeInTheDocument();
+  expect(await screen.findByText("We couldn’t open Personal Finance")).toBeInTheDocument();
   expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Create profile" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByText("Technical details"));
@@ -208,7 +210,7 @@ it.each([false, true])(
       expect(await screen.findByLabelText("Name")).toHaveValue("");
       expect(screen.getByRole("button", { name: "Enable password" })).toBeInTheDocument();
       expect(
-        screen.queryByRole("heading", { name: "We couldn’t open Wealthfolio" }),
+        screen.queryByRole("heading", { name: "We couldn’t open Personal Finance" }),
       ).not.toBeInTheDocument();
     }
     expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
@@ -222,7 +224,7 @@ it("does not expose a protected profile while startup authorization is pending",
     starting: false,
   });
   mount();
-  await screen.findByRole("heading", { name: "Who's using Wealthfolio?" });
+  await screen.findByRole("heading", { name: "Who's using Personal Finance?" });
   expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
   expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Personal" }));
@@ -318,11 +320,14 @@ it("does not show the chooser while the initial profile state is unresolved", as
   const pending = deferred<typeof unlocked>();
   mocks.command.mockReturnValue(pending.promise);
   mount();
-  expect(screen.getByRole("status")).toHaveTextContent("Opening Wealthfolio");
+  expect(screen.getByRole("status")).toHaveTextContent("Opening Personal Finance");
   expect(screen.getByRole("status")).toHaveClass("sr-only");
-  expect(screen.getByRole("img", { name: "Wealthfolio" })).toHaveAttribute("src", "/logo-gold.png");
+  expect(screen.getByRole("img", { name: "Personal Finance" })).toHaveAttribute(
+    "src",
+    "/logo-gold.png",
+  );
   expect(
-    screen.queryByRole("heading", { name: "Who's using Wealthfolio?" }),
+    screen.queryByRole("heading", { name: "Who's using Personal Finance?" }),
   ).not.toBeInTheDocument();
   expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
   await act(async () => pending.resolve(unlocked));
@@ -340,7 +345,7 @@ it("waits for teardown before allowing profile selection", async () => {
     command === "lock_profile" ? closing.promise : Promise.resolve({ ...unlocked, session: null }),
   );
   await menuAction("Switch profile");
-  expect(screen.getByRole("status")).toHaveTextContent("Locking Wealthfolio");
+  expect(screen.getByRole("status")).toHaveTextContent("Locking Personal Finance");
   expect(screen.queryByRole("button", { name: "Personal" })).not.toBeInTheDocument();
   await act(async () => closing.resolve());
   fireEvent.click(await screen.findByRole("button", { name: "Personal" }));
@@ -368,7 +373,7 @@ it("keeps failed teardown covered and lets the user retry", async () => {
   mocks.command.mockResolvedValue({ ...unlocked, session: null });
   fireEvent.click(screen.getByRole("button", { name: "Retry" }));
   expect(
-    await screen.findByRole("heading", { name: "Who's using Wealthfolio?" }),
+    await screen.findByRole("heading", { name: "Who's using Personal Finance?" }),
   ).toBeInTheDocument();
 });
 it("opens an unprotected profile from the explicitly requested profile picker", async () => {
@@ -381,7 +386,7 @@ it("opens an unprotected profile from the explicitly requested profile picker", 
   mocks.command.mockResolvedValue({ ...unlocked, session: null });
   await menuAction("Switch profile");
   expect(
-    await screen.findByRole("heading", { name: "Who's using Wealthfolio?" }),
+    await screen.findByRole("heading", { name: "Who's using Personal Finance?" }),
   ).toBeInTheDocument();
   expect(mocks.reload).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Personal" }));
@@ -406,7 +411,7 @@ it("ignores a status read from before a switch started", async () => {
   );
   await waitFor(() => expect(mocks.command).toHaveBeenCalledWith("get_profile_state"));
   await menuAction("Switch profile");
-  await screen.findByRole("heading", { name: "Who's using Wealthfolio?" });
+  await screen.findByRole("heading", { name: "Who's using Personal Finance?" });
   await act(async () => old.resolve(unlocked));
   expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
 });
@@ -473,7 +478,7 @@ it("keeps password entry hidden after locking until the selected profile is clic
   mount();
   await screen.findByText("Private portfolio");
   mocks.command.mockResolvedValue({ ...protectedState, session: null });
-  await menuAction("Lock Wealthfolio");
+  await menuAction("Lock Personal Finance");
   const selected = await screen.findByRole("button", { name: "Personal" });
   expect(selected).toHaveAttribute("aria-pressed", "true");
   expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
@@ -667,7 +672,7 @@ it("removes a password with current proof and reopens without a profile picker",
   await waitFor(() => expect(mocks.reload).toHaveBeenCalledWith({ dashboard: false }));
   expect(mocks.command).toHaveBeenCalledWith("unlock_profile", { profileId: "a", proof: null });
   expect(
-    screen.queryByRole("heading", { name: "Who's using Wealthfolio?" }),
+    screen.queryByRole("heading", { name: "Who's using Personal Finance?" }),
   ).not.toBeInTheDocument();
 });
 
@@ -902,7 +907,9 @@ it("uses native startup and lock events without polling", async () => {
     mocks.changed();
   });
   expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Who's using Wealthfolio?" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { name: "Who's using Personal Finance?" }),
+  ).toBeInTheDocument();
 });
 
 const profileStateReads = () =>
@@ -963,7 +970,9 @@ it("closes locally without locking the server when another tab already closed th
     profileChangesChannel?.dispatchEvent(new MessageEvent("message", { data: "changed" }));
   });
   expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Who's using Wealthfolio?" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { name: "Who's using Personal Finance?" }),
+  ).toBeInTheDocument();
   expect(mocks.command).not.toHaveBeenCalledWith("lock_profile", expect.anything());
 });
 
@@ -1059,7 +1068,7 @@ it("keeps an expired profile closed after reconnect without issuing another lock
   await act(async () => window.dispatchEvent(new Event("online")));
   expect(screen.queryByText("Private portfolio")).not.toBeInTheDocument();
   expect(
-    await screen.findByRole("heading", { name: "Who's using Wealthfolio?" }),
+    await screen.findByRole("heading", { name: "Who's using Personal Finance?" }),
   ).toBeInTheDocument();
   expect(mocks.command).not.toHaveBeenCalledWith("lock_profile", expect.anything());
 });
@@ -1155,7 +1164,7 @@ it.each([true, false])("adds a second profile directly from the menu (web: %s)",
   expect(mocks.command).toHaveBeenCalledWith("lock_profile", { preserveAuth: false });
   expect(await screen.findByRole("heading", { name: "Create a profile" })).toBeInTheDocument();
   expect(
-    screen.queryByRole("heading", { name: "Who's using Wealthfolio?" }),
+    screen.queryByRole("heading", { name: "Who's using Personal Finance?" }),
   ).not.toBeInTheDocument();
 });
 it("does not open profile creation when closing the current profile fails", async () => {
@@ -1344,7 +1353,7 @@ it("resumes after an SSE reconnect without relying on a browser online event", a
   expect(mocks.command).not.toHaveBeenCalledWith("lock_profile", expect.anything());
 });
 
-it.each(["Lock Wealthfolio", "Switch profile"])(
+it.each(["Lock Personal Finance", "Switch profile"])(
   "keeps content hidden when %s fails offline",
   async (action) => {
     mocks.command.mockResolvedValue({

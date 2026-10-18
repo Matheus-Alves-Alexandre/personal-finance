@@ -3,7 +3,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 use tauri_plugin_dialog::DialogExt;
 
 pub fn create_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Error> {
-    let app_menu = SubmenuBuilder::new(app, "Wealthfolio")
+    let app_menu = SubmenuBuilder::new(app, "Personal Finance")
         .item(&MenuItemBuilder::with_id("open_settings", "Settings...").build(app)?)
         .separator()
         .item(&PredefinedMenuItem::hide(app, None)?)
@@ -37,7 +37,7 @@ pub fn create_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Err
         // Add the new menu item for checking updates
         .item(&MenuItemBuilder::with_id("check_for_update", "Check for Update").build(app)?)
         .separator()
-        .item(&MenuItemBuilder::with_id("show_about_dialog", "About Wealthfolio").build(app)?)
+        .item(&MenuItemBuilder::with_id("show_about_dialog", "About Personal Finance").build(app)?)
         .build()?;
 
     let menu = MenuBuilder::new(app)
@@ -60,7 +60,7 @@ pub fn handle_menu_event(app: &AppHandle, event_id: &str) {
         }
         "report_issue" => {
             app.dialog()
-                .message("If you encounter any issues, please email us at support@wealthfolio.app")
+                .message("Report issues at https://github.com/Matheus-Alves-Alexandre/personal-finance/issues")
                 .title("Report Issue")
                 .show(|_| {});
         }
@@ -86,7 +86,9 @@ pub fn handle_menu_event(app: &AppHandle, event_id: &str) {
                         // Already up-to-date - show native dialog
                         app_handle
                             .dialog()
-                            .message("You're already running the latest version of Wealthfolio.")
+                            .message(
+                                "You're already running the latest version of Personal Finance.",
+                            )
                             .title("No Updates Available")
                             .show(|_| {});
                     }
@@ -103,7 +105,7 @@ pub fn handle_menu_event(app: &AppHandle, event_id: &str) {
         }
         "show_about_dialog" => {
             let package_info = app.package_info();
-            let app_name = &package_info.name;
+            let app_name = "Personal Finance";
             let app_version = &package_info.version.to_string();
             let message = format!("{} version {}", app_name, app_version);
             app.dialog()
